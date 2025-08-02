@@ -223,9 +223,10 @@ class LoginView(APIView):
 
         request.session['user_id'] = user.id
         request.session['email'] = user.email
+        request.session['name'] = user.name
+        request.session['role'] = user.role
         request.session.set_expiry(60 * 120)
-
-        return Response({"message": "Login successful", "email": user.email})
+        return Response({"message": "Login successful","user_id":user.id, "email": user.email, "name": user.name, "role": user.role})
 
 
 

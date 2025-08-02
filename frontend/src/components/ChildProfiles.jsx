@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -168,7 +168,7 @@ const mockChildren = [
   }
 ];
 
-export function ChildProfiles({ onViewChild, onBackToList, selectedChildId, onTakeTest }) {
+export function ChildProfiles({ onViewChild, onBackToList, selectedChildId, onTakeTest,isAuthenticated }) {
   const [isAddingChild, setIsAddingChild] = useState(false);
   const [isEditingChild, setIsEditingChild] = useState(false);
   const [editingChildId, setEditingChildId] = useState(null);
@@ -192,6 +192,32 @@ export function ChildProfiles({ onViewChild, onBackToList, selectedChildId, onTa
   });
 
   const selectedChild = selectedChildId ? mockChildren.find(child => child.id === selectedChildId) : null;
+  const fetchStudents = async () => {
+  try {
+    const response = await fetch("http://localhost:8000/api/students/", {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+      credentials: "include", // Send session cookie
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch students");
+    }
+
+    const data = await response.json();
+    console.log("Students:", data);
+  } catch (err) {
+    console.error("Error fetching students:", err.message);
+  }
+};
+
+useEffect(() => {
+  if (isAuthenticated) {
+    fetchStudents();
+  }
+}, [isAuthenticated]);
 
   const handleAddChild = () => {
     setIsAddingChild(false);
@@ -917,7 +943,7 @@ export function ChildProfiles({ onViewChild, onBackToList, selectedChildId, onTa
     <div className="flex-1 p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1>Children Profiles</h1>
+          <h1></h1>
           <p className="text-sm text-muted-foreground">
             Manage and monitor your children's health information
           </p>

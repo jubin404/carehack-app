@@ -7,6 +7,12 @@ export default defineConfig({
   server: {
     host: true,    // Needed for Docker access
     port: 3000,    // 👈 Change from 5173 to 3000
-    strictPort: true
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true, 
+      }
+    }
   }
 })
