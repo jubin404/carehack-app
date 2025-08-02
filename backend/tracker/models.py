@@ -24,7 +24,6 @@ class ClassGroup(models.Model):
         User,
         limit_choices_to={'role': 'teacher'},
         related_name='class_groups',
-        null=True,
         blank=True,
     )
 
@@ -51,7 +50,7 @@ class Allergy(models.Model):
     type = models.CharField(max_length=100, choices=ALLERGY_TYPE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
 class HealthData(models.Model):
     id = models.AutoField(primary_key=True)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)

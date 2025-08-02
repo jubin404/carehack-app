@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='classgroup',
             name='teachers',
-            field=models.ManyToManyField(blank=True, limit_choices_to={'role': 'teacher'}, null=True, related_name='class_groups', to='tracker.user'),
+            field=models.ManyToManyField(blank=True, limit_choices_to={'role': 'teacher'}, related_name='class_groups', to='tracker.user'),
         ),
         migrations.CreateModel(
             name='HealthData',
