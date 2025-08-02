@@ -1,35 +1,83 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useState } from 'react';
+import { Sidebar } from './components/Sidebar';
+import { Dashboard } from './components/Dashboard';
+import { ChildProfiles } from './components/ChildProfiles';
+import { Reports } from './components/Reports';
+import { Resources } from './components/Resources';
+import { AdminReports } from './components/AdminReports';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [activeView, setActiveView] = useState('reports');
+  const [selectedChildId, setSelectedChildId] = useState(null);
+  const [selectedTestType, setSelectedTestType] = useState(null);
+  const [userRole, setUserRole] = useState('parent'); // Can be changed for demo
+
+  const handleViewChild = (childId) => {
+    setSelectedChildId(childId);
+    setActiveView('child-detail');
+  };
+
+  const handleBackToList = () => {
+    setSelectedChildId(null);
+    setActiveView('children');
+  };
+
+  const handleTakeTest = (childId, testType) => {
+    setSelectedChildId(childId);
+    setSelectedTestType(testType);
+    setActiveView('test-taking');
+  };
+
+  const handleBackFromTest = () => {
+    setSelectedTestType(null);
+    setActiveView('child-detail');
+  };
+
+  const renderContent = () => {
+    switch (activeView) {
+      case 'reports':
+        return <Reports />;
+      case 'children':
+      case 'add-child':
+        return (
+          <ChildProfiles 
+            onViewChild={handleViewChild}
+            onBackToList={handleBackToList}
+            selectedChildId={selectedChildId}
+            onTakeTest={handleTakeTest}
+          />
+        );
+      case 'child-detail':
+        return (
+          <ChildProfiles 
+            onViewChild={handleViewChild}
+            onBackToList={handleBackToList}
+            selectedChildId={selectedChildId}
+            onTakeTest={handleTakeTest}
+          />
+        );
+      case 'admin-reports':
+        return userRole !== 'parent' ? <AdminReports /> : <Dashboard onViewChild={handleViewChild} />;
+      case 'resources':
+        return <Resources />;
+      default:
+        return <Reports onViewChild={handleViewChild} />;
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="flex h-screen bg-white">
+      <Sidebar 
+        activeView={activeView} 
+        onViewChange={setActiveView}
+        userRole={userRole}
+        selectedChildId={selectedChildId}
+        isTestTaking={activeView === 'test-taking'}
+        onBackFromTest={handleBackFromTest}
+      />
+      <main className="flex-1 overflow-auto">
+        {renderContent()}
+      </main>
+    </div>
+  );
 }
-
-export default App
