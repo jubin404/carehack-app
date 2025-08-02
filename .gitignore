@@ -1,0 +1,65 @@
+# === Global ===
+.env
+.env.*
+
+# === Node/React/JSX ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+dist/
+build/
+.cache/
+*.log
+
+# Vite
+.vite/
+
+# === Django/Python ===
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+db.sqlite3
+*.sqlite3
+*.log
+*.pot
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+.migrations/
+local_settings.py
+
+# Django media/static
+media/
+staticfiles/
+static/
+# If you use Django WhiteNoise:
+whitenoise/
+
+# === VSCode/IDE ===
+.vscode/
+.idea/
+*.swp
+*~
+
+# === Docker ===
+**/postgres_data/
