@@ -2,9 +2,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
+from rest_framework import generics
 
-from .models import Student, ClassGroup, User
-from .serializers import StudentSerializer, ClassGroupSerializer, UserSerializer, LoginSerializer
+from .models import Student, ClassGroup, User, Allergy, HealthData, MedicalHistory, Tests, TestResults
+from .serializers import StudentSerializer, ClassGroupSerializer, UserSerializer, LoginSerializer, AllergySerializer, HealthDataSerializer, MedicalHistorySerializer, TestsSerializer, TestResultsSerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.contrib.auth.hashers import check_password
@@ -226,6 +227,7 @@ class LoginView(APIView):
         request.session['name'] = user.name
         request.session['role'] = user.role
         request.session.set_expiry(60 * 120)
+
         return Response({"message": "Login successful","user_id":user.id, "email": user.email, "name": user.name, "role": user.role})
 
 
@@ -338,3 +340,235 @@ class StudentDetailView(APIView):
 
         student.delete()
         return Response(status=204)
+
+
+class AllergyListCreateView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        allergies = Allergy.objects.all()
+        serializer = AllergySerializer(allergies, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = AllergySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class AllergyDetailView(APIView):
+    permission_classes = [AllowAny]
+    def get_object(self, pk):
+        try:
+            return Allergy.objects.get(pk=pk)
+        except Allergy.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        allergy = self.get_object(pk)
+        if not allergy:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = AllergySerializer(allergy)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        allergy = self.get_object(pk)
+        if not allergy:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = AllergySerializer(allergy, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        allergy = self.get_object(pk)
+        if not allergy:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        allergy.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class HealthDataListCreateView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        student_id = request.GET.get('student')
+        if student_id:
+            healthdata = HealthData.objects.filter(student_id=student_id)
+        else:
+            healthdata = HealthData.objects.all()
+        serializer = HealthDataSerializer(healthdata, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = HealthDataSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class HealthDataDetailView(APIView):
+    permission_classes = [AllowAny]
+    def get_object(self, pk):
+        try:
+            return HealthData.objects.get(pk=pk)
+        except HealthData.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        healthdata = self.get_object(pk)
+        if not healthdata:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = HealthDataSerializer(healthdata)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        healthdata = self.get_object(pk)
+        if not healthdata:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = HealthDataSerializer(healthdata, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        healthdata = self.get_object(pk)
+        if not healthdata:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        healthdata.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# MedicalHistory Views
+class MedicalHistoryListCreateView(APIView):
+    def get(self, request):
+        histories = MedicalHistory.objects.all()
+        serializer = MedicalHistorySerializer(histories, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = MedicalHistorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class MedicalHistoryDetailView(APIView):
+    def get_object(self, pk):
+        try:
+            return MedicalHistory.objects.get(pk=pk)
+        except MedicalHistory.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = MedicalHistorySerializer(obj)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = MedicalHistorySerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# Tests Views
+class TestsListCreateView(APIView):
+    def get(self, request):
+        tests = Tests.objects.all()
+        serializer = TestsSerializer(tests, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = TestsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class TestsDetailView(APIView):
+    def get_object(self, pk):
+        try:
+            return Tests.objects.get(pk=pk)
+        except Tests.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = TestsSerializer(obj)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = TestsSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# TestResults Views
+class TestResultsListCreateView(APIView):
+    def get(self, request):
+        results = TestResults.objects.all()
+        serializer = TestResultsSerializer(results, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = TestResultsSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class TestResultsDetailView(APIView):
+    def get_object(self, pk):
+        try:
+            return TestResults.objects.get(pk=pk)
+        except TestResults.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = TestResultsSerializer(obj)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = TestResultsSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        obj.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

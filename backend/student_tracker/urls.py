@@ -6,7 +6,7 @@ import rest_framework
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Service Tracker API",
+        title="Student Health Tracker API",
         default_version="v1",
     ),
     public=True,
