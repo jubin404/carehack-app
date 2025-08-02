@@ -48,10 +48,8 @@ export function Sidebar({
   activeView,
   onViewChange,
   userRole,
-  selectedChildId,
   isTestTaking,
   user,
-  onBackFromTest,
   onLogout,
 }) {
   const [showConfirmLogout, setShowConfirmLogout] = useState(false);

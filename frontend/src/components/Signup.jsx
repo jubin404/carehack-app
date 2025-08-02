@@ -318,6 +318,7 @@ export function SignUp({onSwitchToLogin}) {
                             Parent/Guardian
                           </SelectItem>
                           <SelectItem value="teacher">Teacher</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
