@@ -246,7 +246,7 @@ class StudentListCreateView(APIView):
         if user.role == 'admin':
             students = Student.objects.all()
         elif user.role == 'teacher':
-            students = Student.objects.filter(class_group__teacher=user)
+            students = Student.objects.filter(class_group__teachers=user)
         elif user.role == 'parent':
             students = Student.objects.filter(parent_email=user.email)
         else:

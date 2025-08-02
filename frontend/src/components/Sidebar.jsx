@@ -69,10 +69,10 @@ export function Sidebar({
         return "Parent Account";
       case "admin":
         return "Administrator";
-      case "school":
-        return "School Account";
+      case "teacher":
+        return "Teacher Account";
       default:
-        return "User Account";
+        return "Teacher Account";
     }
   };
 
