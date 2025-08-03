@@ -31,6 +31,8 @@ class ClassGroup(models.Model):
 class Student(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
+    date_of_birth = models.DateField(null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=[('male','Male'), ('female','Female')], null=True, blank=True)
     address = models.TextField()
     parent_email = models.EmailField()
     contact = models.CharField(max_length=15)
@@ -75,7 +77,7 @@ class  Tests(models.Model):
 
 class TestResults(models.Model):
     id = models.AutoField(primary_key=True)
-    test = models.ForeignKey(Tests, on_delete=models.CASCADE)
+    test = models.CharField(max_length=100)
     result = models.CharField(max_length=100)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)

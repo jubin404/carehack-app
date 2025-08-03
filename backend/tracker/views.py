@@ -344,11 +344,13 @@ class StudentDetailView(APIView):
 
 class AllergyListCreateView(APIView):
     permission_classes = [AllowAny]
+
     def get(self, request):
         allergies = Allergy.objects.all()
         serializer = AllergySerializer(allergies, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(request_body=AllergySerializer, responses={201: AllergySerializer})
     def post(self, request):
         serializer = AllergySerializer(data=request.data)
         if serializer.is_valid():
@@ -390,6 +392,12 @@ class AllergyDetailView(APIView):
 
 class HealthDataListCreateView(APIView):
     permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_summary="List health data",
+        operation_description="Retrieve all health data or filter by student ID.",
+        responses={200: HealthDataSerializer(many=True)}
+    )
     def get(self, request):
         student_id = request.GET.get('student')
         if student_id:
@@ -399,6 +407,11 @@ class HealthDataListCreateView(APIView):
         serializer = HealthDataSerializer(healthdata, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_summary="Create health data",
+        request_body=HealthDataSerializer,
+        responses={201: HealthDataSerializer}
+    )
     def post(self, request):
         serializer = HealthDataSerializer(data=request.data)
         if serializer.is_valid():
@@ -408,12 +421,17 @@ class HealthDataListCreateView(APIView):
 
 class HealthDataDetailView(APIView):
     permission_classes = [AllowAny]
+
     def get_object(self, pk):
         try:
             return HealthData.objects.get(pk=pk)
         except HealthData.DoesNotExist:
             return None
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve health data",
+        responses={200: HealthDataSerializer}
+    )
     def get(self, request, pk):
         healthdata = self.get_object(pk)
         if not healthdata:
@@ -421,6 +439,11 @@ class HealthDataDetailView(APIView):
         serializer = HealthDataSerializer(healthdata)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_summary="Update health data",
+        request_body=HealthDataSerializer,
+        responses={200: HealthDataSerializer}
+    )
     def put(self, request, pk):
         healthdata = self.get_object(pk)
         if not healthdata:
@@ -431,6 +454,25 @@ class HealthDataDetailView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+        operation_summary="Partially update health data",
+        request_body=HealthDataSerializer,
+        responses={200: HealthDataSerializer}
+    )
+    def patch(self, request, pk):
+        healthdata = self.get_object(pk)
+        if not healthdata:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = HealthDataSerializer(healthdata, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        operation_summary="Delete health data",
+        responses={204: "No Content"}
+    )
     def delete(self, request, pk):
         healthdata = self.get_object(pk)
         if not healthdata:
@@ -440,11 +482,27 @@ class HealthDataDetailView(APIView):
 
 # MedicalHistory Views
 class MedicalHistoryListCreateView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_summary="List medical history",
+        operation_description="Retrieve all medical history or filter by student ID.",
+        responses={200: MedicalHistorySerializer(many=True)}
+    )
     def get(self, request):
-        histories = MedicalHistory.objects.all()
+        student_id = request.GET.get('student')
+        if student_id:
+            histories = MedicalHistory.objects.filter(student_id=student_id)
+        else:
+            histories = MedicalHistory.objects.all()
         serializer = MedicalHistorySerializer(histories, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_summary="Create medical history",
+        request_body=MedicalHistorySerializer,
+        responses={201: MedicalHistorySerializer}
+    )
     def post(self, request):
         serializer = MedicalHistorySerializer(data=request.data)
         if serializer.is_valid():
@@ -453,12 +511,18 @@ class MedicalHistoryListCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class MedicalHistoryDetailView(APIView):
+    permission_classes = [AllowAny]
+
     def get_object(self, pk):
         try:
             return MedicalHistory.objects.get(pk=pk)
         except MedicalHistory.DoesNotExist:
             return None
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve medical history",
+        responses={200: MedicalHistorySerializer}
+    )
     def get(self, request, pk):
         obj = self.get_object(pk)
         if not obj:
@@ -466,6 +530,11 @@ class MedicalHistoryDetailView(APIView):
         serializer = MedicalHistorySerializer(obj)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_summary="Update medical history",
+        request_body=MedicalHistorySerializer,
+        responses={200: MedicalHistorySerializer}
+    )
     def put(self, request, pk):
         obj = self.get_object(pk)
         if not obj:
@@ -476,6 +545,25 @@ class MedicalHistoryDetailView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+        operation_summary="Partially update medical history",
+        request_body=MedicalHistorySerializer,
+        responses={200: MedicalHistorySerializer}
+    )
+    def patch(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = MedicalHistorySerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        operation_summary="Delete medical history",
+        responses={204: "No Content"}
+    )
     def delete(self, request, pk):
         obj = self.get_object(pk)
         if not obj:
@@ -530,11 +618,27 @@ class TestsDetailView(APIView):
 
 # TestResults Views
 class TestResultsListCreateView(APIView):
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        operation_summary="List test results",
+        operation_description="Retrieve all test results or filter by student ID.",
+        responses={200: TestResultsSerializer(many=True)}
+    )
     def get(self, request):
-        results = TestResults.objects.all()
+        student_id = request.GET.get('student')
+        if student_id:
+            results = TestResults.objects.filter(student_id=student_id)
+        else:
+            results = TestResults.objects.all()
         serializer = TestResultsSerializer(results, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_summary="Create test result",
+        request_body=TestResultsSerializer,
+        responses={201: TestResultsSerializer}
+    )
     def post(self, request):
         serializer = TestResultsSerializer(data=request.data)
         if serializer.is_valid():
@@ -543,12 +647,18 @@ class TestResultsListCreateView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class TestResultsDetailView(APIView):
+    permission_classes = [AllowAny]
+
     def get_object(self, pk):
         try:
             return TestResults.objects.get(pk=pk)
         except TestResults.DoesNotExist:
             return None
 
+    @swagger_auto_schema(
+        operation_summary="Retrieve test result",
+        responses={200: TestResultsSerializer}
+    )
     def get(self, request, pk):
         obj = self.get_object(pk)
         if not obj:
@@ -556,6 +666,11 @@ class TestResultsDetailView(APIView):
         serializer = TestResultsSerializer(obj)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_summary="Update test result",
+        request_body=TestResultsSerializer,
+        responses={200: TestResultsSerializer}
+    )
     def put(self, request, pk):
         obj = self.get_object(pk)
         if not obj:
@@ -566,6 +681,25 @@ class TestResultsDetailView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+        operation_summary="Partially update test result",
+        request_body=TestResultsSerializer,
+        responses={200: TestResultsSerializer}
+    )
+    def patch(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({"detail": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = TestResultsSerializer(obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        operation_summary="Delete test result",
+        responses={204: "No Content"}
+    )
     def delete(self, request, pk):
         obj = self.get_object(pk)
         if not obj:
