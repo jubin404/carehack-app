@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -23,130 +23,195 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
-const mockStudentReports = [
-  {
-    id: 1,
-    studentName: 'Emma Johnson',
-    age: 8,
-    class: '3A',
-    overallHealth: 'healthy',
-    lastAssessment: '2025-07-20',
-    completedTests: 3,
-    pendingTests: 1,
-    riskLevel: 'low',
-    visionStatus: 'Normal',
-    behavioralScore: 85,
-    parentContact: 'jane.johnson@email.com'
-  },
-  {
-    id: 2,
-    studentName: 'Liam Smith',
-    age: 12,
-    class: '7B',
-    overallHealth: 'needs-attention',
-    lastAssessment: '2025-07-15',
-    completedTests: 2,
-    pendingTests: 2,
-    riskLevel: 'medium',
-    visionStatus: 'Requires Follow-up',
-    behavioralScore: 68,
-    parentContact: 'mark.smith@email.com'
-  },
-  {
-    id: 3,
-    studentName: 'Sophia Davis',
-    age: 10,
-    class: '5C',
-    overallHealth: 'healthy',
-    lastAssessment: '2025-07-18',
-    completedTests: 4,
-    pendingTests: 0,
-    riskLevel: 'low',
-    visionStatus: 'Normal',
-    behavioralScore: 92,
-    parentContact: 'sarah.davis@email.com'
-  },
-  {
-    id: 4,
-    studentName: 'Noah Wilson',
-    age: 9,
-    class: '4A',
-    overallHealth: 'needs-attention',
-    lastAssessment: '2025-07-12',
-    completedTests: 1,
-    pendingTests: 3,
-    riskLevel: 'high',
-    visionStatus: 'Urgent Review',
-    behavioralScore: 45,
-    parentContact: 'michael.wilson@email.com'
-  },
-  {
-    id: 5,
-    studentName: 'Olivia Brown',
-    age: 7,
-    class: '2B',
-    overallHealth: 'healthy',
-    lastAssessment: '2025-07-22',
-    completedTests: 2,
-    pendingTests: 1,
-    riskLevel: 'low',
-    visionStatus: 'Normal',
-    behavioralScore: 88,
-    parentContact: 'lisa.brown@email.com'
-  },
-  {
-    id: 6,
-    studentName: 'Mason Garcia',
-    age: 11,
-    class: '6A',
-    overallHealth: 'healthy',
-    lastAssessment: '2025-07-19',
-    completedTests: 3,
-    pendingTests: 1,
-    riskLevel: 'low',
-    visionStatus: 'Normal',
-    behavioralScore: 79,
-    parentContact: 'carlos.garcia@email.com'
-  }
-];
-
-const aggregateData = {
-  totalStudents: 156,
-  healthyStudents: 128,
-  studentsNeedingAttention: 28,
-  completedAssessments: 342,
-  pendingAssessments: 89,
-  averageScore: 78.5
-};
-
-const classPerformanceData = [
-  { class: '1A', avgScore: 82, students: 25 },
-  { class: '2A', avgScore: 78, students: 28 },
-  { class: '3A', avgScore: 85, students: 26 },
-  { class: '4A', avgScore: 73, students: 24 },
-  { class: '5A', avgScore: 79, students: 27 },
-  { class: '6A', avgScore: 81, students: 26 }
-];
-
-const monthlyTrendsData = [
-  { month: 'Jan', assessments: 45, avgScore: 76 },
-  { month: 'Feb', assessments: 52, avgScore: 78 },
-  { month: 'Mar', assessments: 48, avgScore: 75 },
-  { month: 'Apr', avgScore: 79, assessments: 56 },
-  { month: 'May', assessments: 61, avgScore: 81 },
-  { month: 'Jun', assessments: 58, avgScore: 79 },
-  { month: 'Jul', assessments: 62, avgScore: 82 }
-];
-
-const riskDistributionData = [
-  { name: 'Low Risk', value: 112, color: '#10b981' },
-  { name: 'Medium Risk', value: 32, color: '#f59e0b' },
-  { name: 'High Risk', value: 12, color: '#ef4444' }
-];
+const API_URL = 'http://localhost:8000/api/students/'; // Replace with your actual API endpoint
 
 export function Reports() {
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/students/", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+          credentials: "include",
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch students');
+        }
+        const data = await response.json();
+        setStudents(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+  // Calculate age from date of birth
+  const calculateAge = (dob) => {
+    if (!dob) return 'N/A';
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Calculate health score based on health data
+  const calculateHealthScore = (healthData) => {
+    if (!healthData || healthData.length === 0) return 0;
+    
+    const latestHealth = healthData[0]; // Assuming the first is the latest
+    let score = 80; // Base score
+    
+    // Adjust based on BMI
+    if (latestHealth.height && latestHealth.weight) {
+      const heightInMeters = latestHealth.height / 100;
+      const bmi = latestHealth.weight / (heightInMeters * heightInMeters);
+      if (bmi >= 18.5 && bmi <= 24.9) score += 10;
+      else if (bmi < 16 || bmi > 30) score -= 15;
+      else score -= 5;
+    }
+    
+    // Adjust for allergies
+    if (latestHealth.allergies && latestHealth.allergies.length > 0) {
+      score -= latestHealth.allergies.length * 2;
+    }
+    
+    return Math.max(0, Math.min(100, score));
+  };
+
+  // Determine health status based on score
+  const getHealthStatus = (score) => {
+    if (score >= 90) return 'healthy';
+    if (score >= 70) return 'needs-attention';
+    return 'at-risk';
+  };
+
+  // Determine risk level based on health data
+  const getRiskLevel = (healthData) => {
+    if (!healthData || healthData.length === 0) return 'medium';
+    
+    const latestHealth = healthData[0];
+    if (latestHealth.allergies && latestHealth.allergies.length > 3) return 'high';
+    
+    const score = calculateHealthScore(healthData);
+    if (score < 60) return 'high';
+    if (score < 80) return 'medium';
+    return 'low';
+  };
+
+  // Get test results information
+  const getTestResults = (testResults) => {
+    if (!testResults || testResults.length === 0) return { completed: 0, pending: 0 };
+    
+    // This is a simplified example - adjust based on your actual test status logic
+    const completed = testResults.filter(test => test.result !== 'pending').length;
+    return {
+      completed,
+      pending: testResults.length - completed
+    };
+  };
+
+  // Get last assessment date
+  const getLastAssessment = (testResults) => {
+    if (!testResults || testResults.length === 0) return 'N/A';
+    
+    // Sort by date and get the most recent
+    const sorted = [...testResults].sort((a, b) => 
+      new Date(b.updated_at) - new Date(a.updated_at)
+    );
+    return sorted[0].updated_at.split('T')[0];
+  };
+
+  // Aggregate data calculations
+  const aggregateData = {
+    totalStudents: students.length,
+    healthyStudents: students.filter(s => getHealthStatus(calculateHealthScore(s.healthdata)) === 'healthy').length,
+    studentsNeedingAttention: students.filter(s => 
+      getHealthStatus(calculateHealthScore(s.healthdata)) === 'needs-attention').length,
+    averageScore: students.length > 0 
+      ? students.reduce((sum, student) => sum + calculateHealthScore(student.healthdata), 0) / students.length
+      : 0
+  };
+
+  // Risk distribution data
+  const riskDistributionData = [
+    { 
+      name: 'Low Risk', 
+      value: students.filter(s => getRiskLevel(s.healthdata) === 'low').length,
+      color: '#10b981' 
+    },
+    { 
+      name: 'Medium Risk', 
+      value: students.filter(s => getRiskLevel(s.healthdata) === 'medium').length,
+      color: '#f59e0b' 
+    },
+    { 
+      name: 'High Risk', 
+      value: students.filter(s => getRiskLevel(s.healthdata) === 'high').length,
+      color: '#ef4444' 
+    }
+  ];
+
+  // Class performance data
+  const classPerformanceData = Array.from(
+    new Set(students.map(s => s.class_group))
+  )
+  .filter(Boolean)
+  .map(classGroup => {
+    const classStudents = students.filter(s => s.class_group === classGroup);
+    const avgScore = classStudents.length > 0
+      ? classStudents.reduce((sum, student) => sum + calculateHealthScore(student.healthdata), 0) / classStudents.length
+      : 0;
+      
+    return {
+      class: `Grade ${classGroup}`,
+      avgScore,
+      students: classStudents.length
+    };
+  });
+
+  // Monthly trends data (mock - replace with actual data if available)
+  const monthlyTrendsData = [
+    { month: 'Jan', assessments: 45, avgScore: 76 },
+    { month: 'Feb', assessments: 52, avgScore: 78 },
+    { month: 'Mar', assessments: 48, avgScore: 75 },
+    { month: 'Apr', avgScore: 79, assessments: 56 },
+    { month: 'May', assessments: 61, avgScore: 81 },
+    { month: 'Jun', assessments: 58, avgScore: 79 },
+    { month: 'Jul', assessments: 62, avgScore: 82 }
+  ];
+
+  // Filter students based on search and filter criteria
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (student.class_group && `Grade ${student.class_group}`.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const healthScore = calculateHealthScore(student.healthdata);
+    const healthStatus = getHealthStatus(healthScore);
+    const riskLevel = getRiskLevel(student.healthdata);
+    
+    const matchesFilter = activeFilter === 'all' || 
+      (activeFilter === 'healthy' && healthStatus === 'healthy') ||
+      (activeFilter === 'needs-attention' && healthStatus === 'needs-attention') ||
+      (activeFilter === 'high-risk' && riskLevel === 'high');
+    
+    return matchesSearch && matchesFilter;
+  });
 
   const getRiskBadgeVariant = (risk) => {
     switch (risk) {
@@ -165,17 +230,13 @@ export function Reports() {
     return health === 'healthy' ? 'default' : 'destructive';
   };
 
-  const filteredReports = mockStudentReports.filter(report => {
-    const matchesFilter = activeFilter === 'all' || 
-      (activeFilter === 'healthy' && report.overallHealth === 'healthy') ||
-      (activeFilter === 'needs-attention' && report.overallHealth === 'needs-attention') ||
-      (activeFilter === 'high-risk' && report.riskLevel === 'high');
-    
-    const matchesSearch = report.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.class.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesFilter && matchesSearch;
-  });
+  if (loading) {
+    return <div className="flex-1 p-6">Loading student data...</div>;
+  }
+
+  if (error) {
+    return <div className="flex-1 p-6 text-red-600">Error: {error}</div>;
+  }
 
   return (
     <div className="flex-1 p-6 space-y-6">
@@ -220,7 +281,9 @@ export function Reports() {
                 <p className="text-2xl font-bold text-green-600">{aggregateData.healthyStudents}</p>
                 <p className="text-xs text-green-600 flex items-center">
                   <TrendingUp className="w-3 h-3 mr-1" />
-                  82% of total
+                  {aggregateData.totalStudents > 0 
+                    ? Math.round((aggregateData.healthyStudents / aggregateData.totalStudents) * 100)
+                    : 0}% of total
                 </p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-500" />
@@ -236,7 +299,9 @@ export function Reports() {
                 <p className="text-2xl font-bold text-orange-600">{aggregateData.studentsNeedingAttention}</p>
                 <p className="text-xs text-orange-600 flex items-center">
                   <AlertTriangle className="w-3 h-3 mr-1" />
-                  18% of total
+                  {aggregateData.totalStudents > 0 
+                    ? Math.round((aggregateData.studentsNeedingAttention / aggregateData.totalStudents) * 100)
+                    : 0}% of total
                 </p>
               </div>
               <AlertTriangle className="w-8 h-8 text-orange-500" />
@@ -249,7 +314,7 @@ export function Reports() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Average Score</p>
-                <p className="text-2xl font-bold">{aggregateData.averageScore}%</p>
+                <p className="text-2xl font-bold">{Math.round(aggregateData.averageScore)}%</p>
                 <p className="text-xs text-blue-600 flex items-center">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   +2.5% this month
@@ -322,30 +387,36 @@ export function Reports() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { student: 'Emma Johnson', assessment: 'Color Vision Test', status: 'completed', date: '2025-07-20' },
-                  { student: 'Liam Smith', assessment: 'ADHD Screening', status: 'completed', date: '2025-07-19' },
-                  { student: 'Sophia Davis', assessment: 'Visual Acuity Test', status: 'completed', date: '2025-07-18' },
-                  { student: 'Noah Wilson', assessment: 'Behavioral Assessment', status: 'pending', date: '2025-07-17' }
-                ].map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        activity.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'
-                      }`} />
-                      <div>
-                        <p className="font-medium">{activity.student}</p>
-                        <p className="text-sm text-muted-foreground">{activity.assessment}</p>
+                {students
+                  .flatMap(student => 
+                    (student.testresults || []).map(test => ({
+                      student: student.name,
+                      assessment: test.test,
+                      status: test.result === 'pending' ? 'pending' : 'completed',
+                      date: test.updated_at.split('T')[0]
+                    }))
+                  )
+                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                  .slice(0, 4)
+                  .map((activity, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full ${
+                          activity.status === 'completed' ? 'bg-green-500' : 'bg-yellow-500'
+                        }`} />
+                        <div>
+                          <p className="font-medium">{activity.student}</p>
+                          <p className="text-sm text-muted-foreground">{activity.assessment}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={activity.status === 'completed' ? 'default' : 'secondary'}>
+                          {activity.status}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground mt-1">{activity.date}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <Badge variant={activity.status === 'completed' ? 'default' : 'secondary'}>
-                        {activity.status}
-                      </Badge>
-                      <p className="text-xs text-muted-foreground mt-1">{activity.date}</p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>
@@ -384,7 +455,7 @@ export function Reports() {
             <CardHeader>
               <CardTitle>Individual Student Reports</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Showing {filteredReports.length} of {mockStudentReports.length} students
+                Showing {filteredStudents.length} of {students.length} students
               </p>
             </CardHeader>
             <CardContent>
@@ -402,63 +473,74 @@ export function Reports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredReports.map((report) => (
-                    <TableRow key={report.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{report.studentName}</p>
-                          <p className="text-sm text-muted-foreground">Age: {report.age}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{report.class}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getHealthBadgeVariant(report.overallHealth)}>
-                          {report.overallHealth === 'healthy' ? 'Healthy' : 'Needs Attention'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getRiskBadgeVariant(report.riskLevel)}>
-                          {report.riskLevel.charAt(0).toUpperCase() + report.riskLevel.slice(1)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <span className="text-green-600">{report.completedTests} completed</span>
-                          {report.pendingTests > 0 && (
-                            <span className="text-orange-600 block">{report.pendingTests} pending</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-medium">{report.behavioralScore}%</span>
-                          <Progress value={report.behavioralScore} className="w-16" />
-                        </div>
-                      </TableCell>
-                      <TableCell>{report.lastAssessment}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Download className="w-4 h-4 mr-2" />
-                              Export Report
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredStudents.map((student) => {
+                    const healthScore = calculateHealthScore(student.healthdata);
+                    const healthStatus = getHealthStatus(healthScore);
+                    const riskLevel = getRiskLevel(student.healthdata);
+                    const testResults = getTestResults(student.testresults);
+                    const lastAssessment = getLastAssessment(student.testresults);
+                    const age = calculateAge(student.date_of_birth);
+                    
+                    return (
+                      <TableRow key={student.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{student.name}</p>
+                            <p className="text-sm text-muted-foreground">Age: {age}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {student.class_group ? `Grade ${student.class_group}` : 'Ungrouped'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getHealthBadgeVariant(healthStatus)}>
+                            {healthStatus === 'healthy' ? 'Healthy' : 'Needs Attention'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getRiskBadgeVariant(riskLevel)}>
+                            {riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <span className="text-green-600">{testResults.completed} completed</span>
+                            {testResults.pending > 0 && (
+                              <span className="text-orange-600 block">{testResults.pending} pending</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <span className="font-medium">{Math.round(healthScore)}%</span>
+                            <Progress value={healthScore} className="w-16" />
+                          </div>
+                        </TableCell>
+                        <TableCell>{lastAssessment}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Download className="w-4 h-4 mr-2" />
+                                Export Report
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
@@ -495,18 +577,29 @@ export function Reports() {
               <CardContent>
                 <div className="space-y-4">
                   {[
-                    { ageGroup: '6-8 years', avgScore: 82, students: 45 },
-                    { ageGroup: '9-11 years', avgScore: 78, students: 67 },
-                    { ageGroup: '12-14 years', avgScore: 75, students: 44 }
-                  ].map((group, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>{group.ageGroup} ({group.students} students)</span>
-                        <span className="font-medium">{group.avgScore}%</span>
+                    { ageGroup: '6-8 years', minAge: 6, maxAge: 8 },
+                    { ageGroup: '9-11 years', minAge: 9, maxAge: 11 },
+                    { ageGroup: '12-14 years', minAge: 12, maxAge: 14 }
+                  ].map((group, index) => {
+                    const groupStudents = students.filter(student => {
+                      const age = calculateAge(student.date_of_birth);
+                      return age >= group.minAge && age <= group.maxAge;
+                    });
+                    
+                    const avgScore = groupStudents.length > 0
+                      ? groupStudents.reduce((sum, student) => sum + calculateHealthScore(student.healthdata), 0) / groupStudents.length
+                      : 0;
+                    
+                    return (
+                      <div key={index} className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>{group.ageGroup} ({groupStudents.length} students)</span>
+                          <span className="font-medium">{Math.round(avgScore)}%</span>
+                        </div>
+                        <Progress value={avgScore} />
                       </div>
-                      <Progress value={group.avgScore} />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
@@ -518,20 +611,35 @@ export function Reports() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[
-                    { assessment: 'Vision Screening', completed: 89, total: 95 },
-                    { assessment: 'ADHD Assessment', completed: 67, total: 89 },
-                    { assessment: 'Color Vision Test', completed: 78, total: 82 },
-                    { assessment: 'Behavioral Screening', completed: 45, total: 67 }
-                  ].map((item, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>{item.assessment}</span>
-                        <span className="font-medium">{item.completed}/{item.total} ({Math.round((item.completed/item.total)*100)}%)</span>
-                      </div>
-                      <Progress value={(item.completed/item.total)*100} />
-                    </div>
-                  ))}
+                  {students.length > 0 && (
+                    <>
+                      {Array.from(
+                        new Set(students.flatMap(s => 
+                          (s.testresults || []).map(t => t.test)
+                        ))
+                      )
+                      .filter(Boolean)
+                      .slice(0, 4) // Limit to 4 assessments for display
+                      .map((assessment, index) => {
+                        const allTests = students.flatMap(s => 
+                          (s.testresults || []).filter(t => t.test === assessment)
+                        );
+                        const completed = allTests.filter(t => t.result !== 'pending').length;
+                        
+                        return (
+                          <div key={index} className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>{assessment}</span>
+                              <span className="font-medium">
+                                {completed}/{allTests.length} ({allTests.length > 0 ? Math.round((completed/allTests.length)*100) : 0}%)
+                              </span>
+                            </div>
+                            <Progress value={allTests.length > 0 ? (completed/allTests.length)*100 : 0} />
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>

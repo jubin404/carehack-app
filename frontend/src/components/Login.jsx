@@ -261,28 +261,6 @@ export function Login({ onLogin, onSwitchToSignup }) {
               </p>
             </div>
 
-            {/* Demo Info */}
-            <div className="text-center mt-6">
-              <div className="inline-block bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-                <p className="text-sm font-medium text-gray-900 mb-1">
-                  Demo Access
-                </p>
-                <p className="text-xs text-gray-700">
-                  Email:{" "}
-                  <span className="font-mono bg-white px-1 rounded">
-                    demo@educare.com
-                  </span>{" "}
-                  • Password:{" "}
-                  <span className="font-mono bg-white px-1 rounded">
-                    demo123
-                  </span>
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  Or use any email and password for demo
-                </p>
-              </div>
-            </div>
-
             {/* Footer */}
             <div className="text-center mt-6 text-xs text-gray-500">
               <p>© 2025 EduCare. Secure & HIPAA Compliant.</p>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -20,91 +20,145 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-const mockAllChildrenData = [
-  {
-    id: 1,
-    name: 'Emma Johnson',
-    age: 8,
-    className: 'Grade 3A',
-    healthScore: 94,
-    lastCheckup: '2025-07-15',
-    status: 'healthy',
-    alerts: 0,
-    vaccinations: 'up-to-date',
-    assessments: [
-      { type: 'Motor Skills', score: 85, status: 'good' },
-      { type: 'Cognitive', score: 92, status: 'excellent' }
-    ]
-  },
-  {
-    id: 2,
-    name: 'Liam Smith',
-    age: 12,
-    className: 'Grade 7B',
-    healthScore: 78,
-    lastCheckup: '2025-07-10',
-    status: 'needs-attention',
-    alerts: 1,
-    vaccinations: 'due-soon',
-    assessments: [
-      { type: 'Cognitive', score: 78, status: 'good' }
-    ]
-  },
-  {
-    id: 3,
-    name: 'Sophia Davis',
-    age: 6,
-    className: 'Grade 1A',
-    healthScore: 96,
-    lastCheckup: '2025-07-20',
-    status: 'healthy',
-    alerts: 0,
-    vaccinations: 'up-to-date',
-    assessments: [
-      { type: 'Motor Skills', score: 90, status: 'excellent' }
-    ]
-  },
-  {
-    id: 4,
-    name: 'Noah Wilson',
-    age: 10,
-    className: 'Grade 5A',
-    healthScore: 88,
-    lastCheckup: '2025-07-05',
-    status: 'healthy',
-    alerts: 0,
-    vaccinations: 'up-to-date',
-    assessments: [
-      { type: 'Social Skills', score: 88, status: 'good' }
-    ]
-  }
-];
-
-const overviewData = [
-  { name: 'Healthy', value: 75, color: '#22c55e' },
-  { name: 'Needs Attention', value: 20, color: '#f59e0b' },
-  { name: 'At Risk', value: 5, color: '#ef4444' }
-];
-
-const assessmentData = [
-  { subject: 'Motor Skills', average: 85 },
-  { subject: 'Cognitive', average: 82 },
-  { subject: 'Language', average: 88 },
-  { subject: 'Social Skills', average: 84 }
-];
+const API_URL = 'http://localhost:8000/api/students/'; // Replace with your actual API endpoint
 
 export function AdminReports() {
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
-  const filteredChildren = mockAllChildrenData.filter(child => {
-    const matchesSearch = child.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesClass = selectedClass === 'all' || child.className === selectedClass;
-    const matchesStatus = selectedStatus === 'all' || child.status === selectedStatus;
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/students/", {
+          method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
+          credentials: "include",
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch students');
+        }
+        const data = await response.json();
+        setStudents(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
+  // Calculate age from date of birth
+  const calculateAge = (dob) => {
+    if (!dob) return 'N/A';
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Calculate health score based on health data
+  const calculateHealthScore = (healthData) => {
+    if (!healthData || healthData.length === 0) return 0;
+    
+    // Simple scoring logic - adjust based on your requirements
+    const latestHealth = healthData[0]; // Assuming the first is the latest
+    let score = 80; // Base score
+    
+    // Adjust based on BMI (very simple calculation)
+    if (latestHealth.height && latestHealth.weight) {
+      const heightInMeters = latestHealth.height / 100;
+      const bmi = latestHealth.weight / (heightInMeters * heightInMeters);
+      if (bmi >= 18.5 && bmi <= 24.9) score += 10;
+      else if (bmi < 16 || bmi > 30) score -= 15;
+      else score -= 5;
+    }
+    
+    // Adjust for allergies
+    if (latestHealth.allergies && latestHealth.allergies.length > 0) {
+      score -= latestHealth.allergies.length * 2;
+    }
+    
+    // Ensure score is within bounds
+    return Math.max(0, Math.min(100, score));
+  };
+
+  // Determine health status based on score
+  const getHealthStatus = (score) => {
+    if (score >= 90) return 'healthy';
+    if (score >= 70) return 'needs-attention';
+    return 'at-risk';
+  };
+
+  // Get vaccination status (mock - you'll need to implement based on your data)
+  const getVaccinationStatus = (student) => {
+    // This is a placeholder - implement based on your vaccination data
+    const randomStatus = Math.random();
+    if (randomStatus > 0.8) return 'overdue';
+    if (randomStatus > 0.5) return 'due-soon';
+    return 'up-to-date';
+  };
+
+  // Get last checkup date from health data
+  const getLastCheckup = (healthData) => {
+    if (!healthData || healthData.length === 0) return 'N/A';
+    return healthData[0].updated_at.split('T')[0]; // Just the date part
+  };
+
+  // Get unique class groups for filter
+  const classGroups = [...new Set(students.map(student => 
+    student.class_group ? `Grade ${student.class_group}` : 'Ungrouped'
+  ))];
+
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClass = selectedClass === 'all' || 
+      (student.class_group ? `Grade ${student.class_group}` : 'Ungrouped') === selectedClass;
+    
+    const healthScore = calculateHealthScore(student.healthdata);
+    const healthStatus = getHealthStatus(healthScore);
+    const matchesStatus = selectedStatus === 'all' || healthStatus === selectedStatus;
     
     return matchesSearch && matchesClass && matchesStatus;
   });
+
+  // Calculate overview data based on actual students
+  const overviewData = [
+    { 
+      name: 'Healthy', 
+      value: students.filter(s => getHealthStatus(calculateHealthScore(s.healthdata)) === 'healthy').length / students.length * 100 || 0,
+      color: '#22c55e' 
+    },
+    { 
+      name: 'Needs Attention', 
+      value: students.filter(s => getHealthStatus(calculateHealthScore(s.healthdata)) === 'needs-attention').length / students.length * 100 || 0,
+      color: '#f59e0b' 
+    },
+    { 
+      name: 'At Risk', 
+      value: students.filter(s => getHealthStatus(calculateHealthScore(s.healthdata)) === 'at-risk').length / students.length * 100 || 0,
+      color: '#ef4444' 
+    }
+  ];
+
+  // Calculate assessment data (mock - replace with actual test results if available)
+  const assessmentData = [
+    { subject: 'Physical', average: 85 },
+    { subject: 'Cognitive', average: 82 },
+    { subject: 'Social', average: 88 },
+    { subject: 'Emotional', average: 84 }
+  ];
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -138,6 +192,14 @@ export function AdminReports() {
     return 'text-red-600';
   };
 
+  if (loading) {
+    return <div className="flex-1 p-6">Loading student data...</div>;
+  }
+
+  if (error) {
+    return <div className="flex-1 p-6 text-red-600">Error: {error}</div>;
+  }
+
   return (
     <div className="flex-1 p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -165,7 +227,7 @@ export function AdminReports() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockAllChildrenData.length}</div>
+            <div className="text-2xl font-bold">{students.length}</div>
             <p className="text-xs text-muted-foreground">Across all grades</p>
           </CardContent>
         </Card>
@@ -177,7 +239,7 @@ export function AdminReports() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
-              {mockAllChildrenData.reduce((sum, child) => sum + child.alerts, 0)}
+              {students.filter(s => getHealthStatus(calculateHealthScore(s.healthdata)) === 'needs-attention').length}
             </div>
             <p className="text-xs text-muted-foreground">Require attention</p>
           </CardContent>
@@ -185,12 +247,14 @@ export function AdminReports() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue Checkups</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">At Risk</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold text-red-600">
+              {students.filter(s => getHealthStatus(calculateHealthScore(s.healthdata)) === 'at-risk').length}
+            </div>
+            <p className="text-xs text-muted-foreground">Need immediate attention</p>
           </CardContent>
         </Card>
 
@@ -200,7 +264,11 @@ export function AdminReports() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">89%</div>
+            <div className="text-2xl font-bold text-green-600">
+              {students.length > 0 
+                ? Math.round(students.reduce((sum, student) => sum + calculateHealthScore(student.healthdata), 0) / students.length)
+                : 0}%
+            </div>
             <p className="text-xs text-muted-foreground">School average</p>
           </CardContent>
         </Card>
@@ -231,10 +299,9 @@ export function AdminReports() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
-                <SelectItem value="Grade 1A">Grade 1A</SelectItem>
-                <SelectItem value="Grade 3A">Grade 3A</SelectItem>
-                <SelectItem value="Grade 5A">Grade 5A</SelectItem>
-                <SelectItem value="Grade 7B">Grade 7B</SelectItem>
+                {classGroups.map(group => (
+                  <SelectItem key={group} value={group}>{group}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
@@ -270,32 +337,40 @@ export function AdminReports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredChildren.map((child) => (
-                    <TableRow key={child.id}>
-                      <TableCell className="font-medium">{child.name}</TableCell>
-                      <TableCell>{child.age}</TableCell>
-                      <TableCell>{child.className}</TableCell>
-                      <TableCell>
-                        <span className={`font-bold ${getHealthScoreColor(child.healthScore)}`}>
-                          {child.healthScore}%
-                        </span>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(child.status)}</TableCell>
-                      <TableCell>{getVaccinationBadge(child.vaccinations)}</TableCell>
-                      <TableCell>{child.lastCheckup}</TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button size="sm" variant="outline">
-                            <Eye className="w-4 h-4 mr-1" />
-                            View
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredStudents.map((student) => {
+                    const healthScore = calculateHealthScore(student.healthdata);
+                    const healthStatus = getHealthStatus(healthScore);
+                    const vaccinationStatus = getVaccinationStatus(student);
+                    const lastCheckup = getLastCheckup(student.healthdata);
+                    const age = calculateAge(student.date_of_birth);
+                    
+                    return (
+                      <TableRow key={student.id}>
+                        <TableCell className="font-medium">{student.name}</TableCell>
+                        <TableCell>{age}</TableCell>
+                        <TableCell>{student.class_group ? `Grade ${student.class_group}` : 'Ungrouped'}</TableCell>
+                        <TableCell>
+                          <span className={`font-bold ${getHealthScoreColor(healthScore)}`}>
+                            {healthScore}%
+                          </span>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(healthStatus)}</TableCell>
+                        <TableCell>{getVaccinationBadge(vaccinationStatus)}</TableCell>
+                        <TableCell>{lastCheckup}</TableCell>
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button size="sm" variant="outline">
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                            <Button size="sm" variant="outline">
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
@@ -335,7 +410,7 @@ export function AdminReports() {
                         className="w-3 h-3 rounded-full mr-2" 
                         style={{ backgroundColor: item.color }}
                       />
-                      <span className="text-sm">{item.name}: {item.value}%</span>
+                      <span className="text-sm">{item.name}: {Math.round(item.value)}%</span>
                     </div>
                   ))}
                 </div>
@@ -368,27 +443,53 @@ export function AdminReports() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {['Grade 1A', 'Grade 3A', 'Grade 5A', 'Grade 7B'].map((className) => (
-                  <div key={className} className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">{className}</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Students</span>
-                        <span className="text-sm font-medium">
-                          {mockAllChildrenData.filter(child => child.className === className).length}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Avg Health Score</span>
-                        <span className="text-sm font-medium text-green-600">91%</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Alerts</span>
-                        <span className="text-sm font-medium">0</span>
+                {classGroups.map((className) => {
+                  const classStudents = students.filter(student => 
+                    student.class_group ? `Grade ${student.class_group}` === className : className === 'Ungrouped'
+                  );
+                  
+                  if (classStudents.length === 0) return null;
+                  
+                  const avgHealthScore = classStudents.length > 0 
+                    ? Math.round(classStudents.reduce((sum, student) => sum + calculateHealthScore(student.healthdata), 0) / classStudents.length)
+                    : 0;
+                  
+                  const alertCount = classStudents.filter(s => 
+                    getHealthStatus(calculateHealthScore(s.healthdata)) === 'needs-attention'
+                  ).length;
+                  
+                  const atRiskCount = classStudents.filter(s => 
+                    getHealthStatus(calculateHealthScore(s.healthdata)) === 'at-risk'
+                  ).length;
+                  
+                  return (
+                    <div key={className} className="p-4 border rounded-lg">
+                      <h4 className="font-medium mb-2">{className}</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Students</span>
+                          <span className="text-sm font-medium">
+                            {classStudents.length}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Avg Health Score</span>
+                          <span className={`text-sm font-medium ${getHealthScoreColor(avgHealthScore)}`}>
+                            {avgHealthScore}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Alerts</span>
+                          <span className="text-sm font-medium text-yellow-600">{alertCount}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">At Risk</span>
+                          <span className="text-sm font-medium text-red-600">{atRiskCount}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -401,40 +502,56 @@ export function AdminReports() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-start space-x-4 p-4 border-l-4 border-yellow-500 bg-yellow-50 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-yellow-600 mt-1" />
-                  <div className="flex-1">
-                    <h4 className="font-medium">Vaccination Due</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Liam Smith (Grade 7B) - HPV vaccination due in 2 weeks
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Priority: Medium</p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button size="sm" variant="outline">Contact Parent</Button>
-                    <Button size="sm" variant="outline">Schedule</Button>
-                  </div>
-                </div>
+                {students.filter(student => {
+                  const healthScore = calculateHealthScore(student.healthdata);
+                  return getHealthStatus(healthScore) !== 'healthy';
+                }).map(student => {
+                  const healthScore = calculateHealthScore(student.healthdata);
+                  const healthStatus = getHealthStatus(healthScore);
+                  const className = student.class_group ? `Grade ${student.class_group}` : 'Ungrouped';
+                  
+                  return (
+                    <div 
+                      key={student.id}
+                      className={`flex items-start space-x-4 p-4 border-l-4 rounded-lg ${
+                        healthStatus === 'at-risk' 
+                          ? 'border-red-500 bg-red-50' 
+                          : 'border-yellow-500 bg-yellow-50'
+                      }`}
+                    >
+                      <AlertTriangle className={`w-5 h-5 mt-1 ${
+                        healthStatus === 'at-risk' ? 'text-red-600' : 'text-yellow-600'
+                      }`} />
+                      <div className="flex-1">
+                        <h4 className="font-medium">
+                          {healthStatus === 'at-risk' ? 'Health Risk' : 'Needs Attention'} - {student.name}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {className} - Health score: {healthScore}%
+                          {student.healthdata?.[0]?.allergies?.length > 0 && 
+                            ` - Allergies: ${student.healthdata[0].allergies.join(', ')}`
+                          }
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Priority: {healthStatus === 'at-risk' ? 'High' : 'Medium'}
+                        </p>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline">Contact Parent</Button>
+                        <Button size="sm" variant="outline">Schedule Checkup</Button>
+                      </div>
+                    </div>
+                  );
+                })}
 
-                <div className="flex items-start space-x-4 p-4 border-l-4 border-blue-500 bg-blue-50 rounded-lg">
-                  <CheckCircle className="w-5 h-5 text-blue-600 mt-1" />
-                  <div className="flex-1">
-                    <h4 className="font-medium">Assessment Follow-up</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Liam Smith (Grade 7B) - Cognitive assessment showed areas for improvement
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">Priority: Low</p>
+                {students.filter(student => 
+                  getHealthStatus(calculateHealthScore(student.healthdata)) !== 'healthy'
+                ).length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>All students are currently healthy with no alerts</p>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button size="sm" variant="outline">View Report</Button>
-                    <Button size="sm" variant="outline">Schedule Meeting</Button>
-                  </div>
-                </div>
-
-                <div className="text-center py-8 text-muted-foreground">
-                  <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>All other students are up to date with their health requirements</p>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
