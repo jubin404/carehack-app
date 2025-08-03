@@ -89,14 +89,11 @@ export function Sidebar({
     <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-sidebar-border">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-primary rounded-lg">
-            <Users className="w-6 h-6 text-primary-foreground" />
+        <div className="flex flex-col items-center space-x-3">
+          <div className="p-2">
+            <img src='./wellnest.png' alt="Logo" className="w-full h-full" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-sidebar-foreground">
-              PediHealth
-            </h1>
             <p className="text-xs text-sidebar-foreground/60">Health Tracker</p>
           </div>
         </div>
