@@ -770,6 +770,22 @@ export function ChildProfiles({
       (test) => test.test === testId
     );
   };
+  const calculateAge = (dateString) => {
+  const birthDate = new Date(dateString);
+  const today = new Date();
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const hasBirthdayPassedThisYear =
+    today.getMonth() > birthDate.getMonth() ||
+    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
+
+  if (!hasBirthdayPassedThisYear) {
+    age--;
+  }
+
+  return age;
+};
+
 
   // Mock reports data for the child
   const mockReports = [
@@ -819,7 +835,7 @@ export function ChildProfiles({
   if (selectedChildId && !selectedChild) {
     return <div className="p-6 text-red-600">Child not found.</div>;
   }
-  if (selectedChild) {
+  if (selectedChildId) {
     return (
       <div className="flex-1 p-6 space-y-6">
         <div className="flex items-center justify-between">
@@ -896,7 +912,7 @@ export function ChildProfiles({
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground">Age</p>
-                        <p className="font-medium">{selectedChild.age} years</p>
+                        <p className="font-medium"> {calculateAge(selectedChild.date_of_birth)} years years</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Gender</p>
