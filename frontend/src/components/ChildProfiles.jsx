@@ -287,37 +287,231 @@ export function ChildProfiles({
     allergies: "",
     notes: "",
   });
+  const [testResults, setTestResults] = useState([]);
+  const [selectedChild, setSelectedChild] = useState(null);
 
-  const selectedChild = selectedChildId
-    ? mockChildren.find((child) => child.id === selectedChildId)
+  // Add state for dialogs and new entries
+  const [showAddAllergy, setShowAddAllergy] = useState(false);
+  const [newAllergy, setNewAllergy] = useState({ allergy: '', type: 'food' });
+  const [showAddHealthData, setShowAddHealthData] = useState(false);
+  const [newHealthData, setNewHealthData] = useState({ height: '', weight: '', blood_type: '' });
+  const [showAddMedicalHistory, setShowAddMedicalHistory] = useState(false);
+  const [newMedicalHistory, setNewMedicalHistory] = useState({ medical_condition: '' });
+  const [showAddTestResult, setShowAddTestResult] = useState(false);
+  const [newTestResult, setNewTestResult] = useState({ test: '', result: '', notes: '' });
+
+  // Find the latest health data record
+  const latestHealthData = (selectedChild && selectedChild.healthdata && selectedChild.healthdata.length > 0)
+    ? selectedChild.healthdata[0]
     : null;
+
+  // Save both student info and health data
+  const handleSaveAll = async () => {
+    try {
+      // 1. Update student info
+      const studentResponse = await fetch(`http://localhost:8000/api/students/${selectedChild.id}/`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(editChild),
+      });
+
+      if (!studentResponse.ok) {
+        throw new Error("Failed to update student");
+      }
+
+      // 2. Update or create health data
+      const healthDataPayload = {
+        height: editHealthData.height,
+        weight: editHealthData.weight,
+        blood_type: editHealthData.blood_type,
+        student: selectedChild.id
+      };
+
+      let healthDataResponse;
+      if (latestHealthData) {
+        // Update existing health data
+        healthDataResponse = await fetch(`http://localhost:8000/api/healthdata/${latestHealthData.id}/`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(healthDataPayload),
+        });
+      } else {
+        // Create new health data
+        healthDataResponse = await fetch("http://localhost:8000/api/healthdata/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(healthDataPayload),
+        });
+      }
+
+      if (!healthDataResponse.ok) {
+        throw new Error("Failed to update health data");
+      }
+
+      // 3. Refresh child details
+      const updatedChildResponse = await fetch(`http://localhost:8000/api/students/${selectedChild.id}/`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        credentials: "include",
+      });
+      
+      if (!updatedChildResponse.ok) {
+        throw new Error("Failed to fetch updated child data");
+      }
+
+      const updatedChildData = await updatedChildResponse.json();
+      setSelectedChild(updatedChildData);
+      setIsEditingChild(false);
+    } catch (error) {
+      console.error("Error saving data:", error);
+      alert("Failed to save data. Please try again.");
+    }
+  };
+
+  const [editHealthData, setEditHealthData] = useState({
+    height: latestHealthData?.height || '',
+    weight: latestHealthData?.weight || '',
+    blood_type: latestHealthData?.blood_type || '',
+  });
+
+  // When selectedChild changes, update editHealthData
+  useEffect(() => {
+    if (selectedChild) {
+      setEditChild({
+        name: selectedChild.name,
+        date_of_birth: selectedChild.date_of_birth,
+        gender: selectedChild.gender,
+        address: selectedChild.address,
+        contact: selectedChild.contact,
+        parent_email: selectedChild.parent_email,
+        class_group: selectedChild.class_group,
+      });
+
+      if (selectedChild.healthdata && selectedChild.healthdata.length > 0) {
+        const healthData = selectedChild.healthdata[0];
+        setEditHealthData({
+          height: healthData.height || '',
+          weight: healthData.weight || '',
+          blood_type: healthData.blood_type || '',
+        });
+      } else {
+        setEditHealthData({
+          height: '',
+          weight: '',
+          blood_type: '',
+        });
+      }
+    }
+  }, [selectedChild]);
+
+  // Handler to update or add health data
+  const handleSaveHealthData = async () => {
+    try {
+      const healthDataPayload = {
+        height: editHealthData.height,
+        weight: editHealthData.weight,
+        blood_type: editHealthData.blood_type,
+        student: selectedChild.id
+      };
+
+      let response;
+      if (latestHealthData) {
+        // Update existing health data
+        response = await fetch(`http://localhost:8000/api/healthdata/${latestHealthData.id}/`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(healthDataPayload),
+        });
+      } else {
+        // Create new health data
+        response = await fetch("http://localhost:8000/api/healthdata/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(healthDataPayload),
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error("Failed to save health data");
+      }
+
+      // Refresh child details
+      const updatedChildResponse = await fetch(`http://localhost:8000/api/students/${selectedChild.id}/`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        credentials: "include",
+      });
+      
+      if (!updatedChildResponse.ok) {
+        throw new Error("Failed to fetch updated child data");
+      }
+
+      const updatedChildData = await updatedChildResponse.json();
+      setSelectedChild(updatedChildData);
+    } catch (error) {
+      console.error("Error saving health data:", error);
+      alert("Failed to save health data. Please try again.");
+    }
+  };
+
+  // Fetch all students for listing
   const fetchStudents = async () => {
     try {
       const response = await fetch("http://localhost:8000/api/students/", {
         method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
+        headers: { Accept: "application/json" },
         credentials: "include",
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch students");
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch students");
       const data = await response.json();
       setStudents(data);
-      console.log("Students:", data);
     } catch (err) {
-      console.error("Error fetching students:", err.message);
+      setStudents([]);
     }
   };
 
+  // Fetch all students on mount
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchStudents();
+    fetchStudents();
+  }, []);
+
+  // Fetch selected child details from backend
+  useEffect(() => {
+    if (selectedChildId) {
+      fetch(`http://localhost:8000/api/students/${selectedChildId}/`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        credentials: "include",
+      })
+        .then(res => res.json())
+        .then(data => setSelectedChild(data))
+        .catch(() => setSelectedChild(null));
     }
-  }, [isAuthenticated]);
+  }, [selectedChildId]);
+
+  // Fetch test results when a child is selected
+  useEffect(() => {
+    if (selectedChildId) {
+      fetch(`http://localhost:8000/api/testresults/?student=${selectedChildId}`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        credentials: "include",
+      })
+        .then(res => res.json())
+        .then(data => setTestResults(data))
+        .catch(err => setTestResults([]));
+    }
+  }, [selectedChildId]);
+
+  // Helper to get the result for a specific test type
+  const getTestResultForType = (testType) => {
+    return testResults.find(tr => tr.test === testType);
+  };
 
   const handleAddChild = async () => {
     try {
@@ -350,55 +544,122 @@ export function ChildProfiles({
     }
   };
 
-  const handleEditChild = (child) => {
-    setEditingChildId(child.id);
-    setEditChild({
-      name: child.name,
-      date_of_birth : child.date_of_birth,
-      gender: child.gender.toLowerCase(),
-      address: child.address || "",
-      contact: child.contact || "",
-      parent_email: child.parent_email || "",
+  // Add Allergy
+  const handleAddAllergy = async () => {
+    await fetch("http://localhost:8000/api/allergies/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(newAllergy),
     });
+    setShowAddAllergy(false);
+    setNewAllergy({ allergy: '', type: 'food' });
+    // Refresh child details
+    fetch(`http://localhost:8000/api/students/${selectedChild.id}/`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(data => setSelectedChild(data));
+  };
 
+  // Add Health Data
+  const handleAddHealthData = async () => {
+    await fetch("http://localhost:8000/api/healthdata/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ ...newHealthData, student: selectedChild.id }),
+    });
+    setShowAddHealthData(false);
+    setNewHealthData({ height: '', weight: '', blood_type: '' });
+    fetch(`http://localhost:8000/api/students/${selectedChild.id}/`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(data => setSelectedChild(data));
+  };
+
+  // Add Medical History
+  const handleAddMedicalHistory = async () => {
+    await fetch("http://localhost:8000/api/medicalhistory/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ ...newMedicalHistory, student: selectedChild.id }),
+    });
+    setShowAddMedicalHistory(false);
+    setNewMedicalHistory({ medical_condition: '' });
+    fetch(`http://localhost:8000/api/students/${selectedChild.id}/`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(data => setSelectedChild(data));
+  };
+
+  // Add Test Result
+  const handleAddTestResult = async () => {
+    await fetch("http://localhost:8000/api/testresults/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ ...newTestResult, student: selectedChild.id }),
+    });
+    setShowAddTestResult(false);
+    setNewTestResult({ test: '', result: '', notes: '' });
+    fetch(`http://localhost:8000/api/students/${selectedChild.id}/`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(data => setSelectedChild(data));
+  };
+
+  // When a child is selected from the list, set selectedChild
+  const handleSelectChild = (childId) => {
+    fetch(`http://localhost:8000/api/students/${childId}/`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      credentials: "include",
+    })
+      .then(res => res.json())
+      .then(data => setSelectedChild(data))
+      .catch(() => setSelectedChild(null));
+  };
+
+  // Edit handler
+  const handleEditChild = () => {
     setIsEditingChild(true);
   };
 
+  // Update handler
   const handleUpdateChild = async () => {
     try {
       const response = await fetch(
-        `http://localhost:8000/api/students/${editingChildId}`,
+        `http://localhost:8000/api/students/${selectedChild.id}/`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify(editChild),
         }
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to update student");
-      }
-
+      if (!response.ok) throw new Error("Failed to update student");
       const data = await response.json();
-      console.log("Student updated:", data);
-
-      // Reset state
+      setSelectedChild(data);
       setIsEditingChild(false);
-      setEditingChildId(null);
-      setEditChild({
-        name: "",
-        date_of_birth: "",
-        gender: "",
-        address: "",
-        contact: "",
-        parent_email: "",
-      });
+      fetchStudents(); // Refresh the list after update
     } catch (error) {
       console.error("Error updating student:", error);
     }
   };
+
   const handleChildHealthCare = async () => {
     try {
       const response = await fetch(
@@ -504,9 +765,9 @@ export function ChildProfiles({
   };
 
   const getTestCompletionStatus = (testId) => {
-    if (!selectedChild) return null;
-    return selectedChild.completedTests.find(
-      (test) => test.testType === testId
+    if (!selectedChild || !selectedChild.testresults) return null;
+    return selectedChild.testresults.find(
+      (test) => test.test === testId
     );
   };
 
@@ -552,6 +813,12 @@ export function ChildProfiles({
       : mockReports.filter((report) => report.category === activeReportFilter);
 
   // If a child is selected, show detailed view
+  if (selectedChild === null && selectedChildId) {
+    return <div className="p-6">Loading child details...</div>;
+  }
+  if (selectedChildId && !selectedChild) {
+    return <div className="p-6 text-red-600">Child not found.</div>;
+  }
   if (selectedChild) {
     return (
       <div className="flex-1 p-6 space-y-6">
@@ -572,7 +839,7 @@ export function ChildProfiles({
           <div className="flex space-x-2">
             <Button
               variant="outline"
-              onClick={() => handleEditChild(selectedChild)}
+              onClick={handleEditChild}
             >
               <Edit className="w-4 h-4 mr-2" />
               Edit Profile
@@ -640,7 +907,7 @@ export function ChildProfiles({
                           Blood Type
                         </p>
                         <Badge variant="outline">
-                          {selectedChild.bloodType}
+                          {latestHealthData?.blood_type || "Not set"}
                         </Badge>
                       </div>
                       <div>
@@ -674,7 +941,7 @@ export function ChildProfiles({
                       </div>
                       <p className="text-sm text-muted-foreground">Height</p>
                       <p className="text-xl font-bold">
-                        {selectedChild.height} cm
+                        {latestHealthData?.height || "-"} cm
                       </p>
                     </div>
                     <div className="text-center">
@@ -683,7 +950,7 @@ export function ChildProfiles({
                       </div>
                       <p className="text-sm text-muted-foreground">Weight</p>
                       <p className="text-xl font-bold">
-                        {selectedChild.weight} kg
+                        {latestHealthData?.weight || "-"} kg
                       </p>
                     </div>
                     <div className="text-center">
@@ -692,10 +959,9 @@ export function ChildProfiles({
                       </div>
                       <p className="text-sm text-muted-foreground">BMI</p>
                       <p className="text-xl font-bold">
-                        {calculateBMI(
-                          selectedChild.weight,
-                          selectedChild.height
-                        )}
+                        {latestHealthData?.height && latestHealthData?.weight 
+                          ? calculateBMI(latestHealthData.weight, latestHealthData.height)
+                          : "-"}
                       </p>
                     </div>
                   </div>
@@ -790,24 +1056,80 @@ export function ChildProfiles({
                 <CardTitle>Allergies & Medical Alerts</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {selectedChild.allergies.map((allergy, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <Shield className="w-4 h-4 text-red-500" />
+                {selectedChild.allergies && selectedChild.allergies.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedChild.allergies.map(allergy => (
+                      <div
+                        key={allergy.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <Shield className="w-4 h-4 text-red-500" />
+                          <div>
+                            <p className="font-medium">{allergy.allergy}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {allergy.type}
+                            </p>
+                          </div>
+                        </div>
+                        {getSeverityBadge(allergy.severity)}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">No allergies recorded</p>
+                  </div>
+                )}
+                <div className="mt-4">
+                  <Button onClick={() => setShowAddAllergy(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Allergy
+                  </Button>
+                  <Dialog open={showAddAllergy} onOpenChange={setShowAddAllergy}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Allergy</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
                         <div>
-                          <p className="font-medium">{allergy}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Allergy
-                          </p>
+                          <Label htmlFor="allergy-name">Allergy Name</Label>
+                          <Input
+                            id="allergy-name"
+                            value={newAllergy.allergy}
+                            onChange={e => setNewAllergy({ ...newAllergy, allergy: e.target.value })}
+                            placeholder="Allergy name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="allergy-type">Type</Label>
+                          <Select 
+                            value={newAllergy.type} 
+                            onValueChange={val => setNewAllergy({ ...newAllergy, type: val })}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="food">Food</SelectItem>
+                              <SelectItem value="environment">Environment</SelectItem>
+                              <SelectItem value="medication">Medication</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex space-x-3">
+                          <Button onClick={handleAddAllergy} className="flex-1">
+                            Save
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setShowAddAllergy(false)}
+                          >
+                            Cancel
+                          </Button>
                         </div>
                       </div>
-                      {getSeverityBadge("Severe")}
-                    </div>
-                  ))}
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardContent>
             </Card>
@@ -836,7 +1158,7 @@ export function ChildProfiles({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {selectedChild.visionReports.map((report) => (
+                        {(selectedChild.visionReports || []).map((report) => (
                           <TableRow key={report.id}>
                             <TableCell>{report.date}</TableCell>
                             <TableCell>{report.leftEye}</TableCell>
@@ -876,7 +1198,7 @@ export function ChildProfiles({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {selectedChild.vaccinations.map((vaccine) => (
+                        {(selectedChild.vaccinations || []).map((vaccine) => (
                           <TableRow key={vaccine.id}>
                             <TableCell>{vaccine.vaccine}</TableCell>
                             <TableCell>{vaccine.date}</TableCell>
@@ -892,6 +1214,59 @@ export function ChildProfiles({
                 </Card>
               </TabsContent>
             </Tabs>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Health Data</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="height">Height (cm)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    value={editHealthData.height}
+                    onChange={e => setEditHealthData({ ...editHealthData, height: e.target.value })}
+                    placeholder="Enter height in cm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="weight">Weight (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    value={editHealthData.weight}
+                    onChange={e => setEditHealthData({ ...editHealthData, weight: e.target.value })}
+                    placeholder="Enter weight in kg"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="blood-type">Blood Type</Label>
+                  <Select
+                    value={editHealthData.blood_type}
+                    onValueChange={value => setEditHealthData({ ...editHealthData, blood_type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select blood type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A+">A+</SelectItem>
+                      <SelectItem value="A-">A-</SelectItem>
+                      <SelectItem value="B+">B+</SelectItem>
+                      <SelectItem value="B-">B-</SelectItem>
+                      <SelectItem value="O+">O+</SelectItem>
+                      <SelectItem value="O-">O-</SelectItem>
+                      <SelectItem value="AB+">AB+</SelectItem>
+                      <SelectItem value="AB-">AB-</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={handleSaveHealthData}>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Health Data
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="assessments" className="space-y-6">
@@ -931,7 +1306,7 @@ export function ChildProfiles({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {selectedChild.assessments.map((assessment) => (
+                    {(selectedChild.assessments || []).map((assessment) => (
                       <div
                         key={assessment.id}
                         className="flex items-center justify-between p-3 border rounded-lg"
@@ -958,14 +1333,14 @@ export function ChildProfiles({
             </div>
 
             {/* Completed Tests */}
-            {selectedChild.completedTests.length > 0 && (
+            {(selectedChild.completedTests || []).length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle>Completed Assessment Tests</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {selectedChild.completedTests.map((test) => (
+                    {(selectedChild.completedTests || []).map((test) => (
                       <div
                         key={test.id}
                         className="flex items-center justify-between p-4 border rounded-lg"
@@ -1040,7 +1415,7 @@ export function ChildProfiles({
 
             {/* Reports Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredReports.map((report) => (
+              {(filteredReports || []).map((report) => (
                 <Card
                   key={report.id}
                   className="hover:shadow-md transition-shadow"
@@ -1110,28 +1485,6 @@ export function ChildProfiles({
                 />
               </div>
               <div>
-                <Label htmlFor="edit-height">Height</Label>
-                <Input
-                  id="edit-height"
-                  type="number"
-                  value={childHealth.height}
-                  onChange={(e) =>
-                    setChildHealth({ ...childHealth, height: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-weight">Weight</Label>
-                <Input
-                  id="edit-weight"
-                  type="number"
-                  value={childHealth.weight}
-                  onChange={(e) =>
-                    setChildHealth({ ...childHealth, weight: e.target.value })
-                  }
-                />
-              </div>
-              <div>
                 <Label htmlFor="edit-gender">Gender</Label>
                 <Select
                   value={editChild.gender}
@@ -1149,11 +1502,70 @@ export function ChildProfiles({
                 </Select>
               </div>
               <div>
+                <Label htmlFor="edit-address">Address</Label>
+                <Input
+                  id="edit-address"
+                  value={editChild.address}
+                  onChange={(e) =>
+                    setEditChild({ ...editChild, address: e.target.value })
+                  }
+                  placeholder="Enter address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-contact">Contact Number</Label>
+                <Input
+                  id="edit-contact"
+                  type="tel"
+                  value={editChild.contact}
+                  onChange={(e) =>
+                    setEditChild({ ...editChild, contact: e.target.value })
+                  }
+                  placeholder="Enter contact number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-parentEmail">Parent Email</Label>
+                <Input
+                  id="edit-parentEmail"
+                  type="email"
+                  value={editChild.parent_email}
+                  onChange={(e) =>
+                    setEditChild({ ...editChild, parent_email: e.target.value })
+                  }
+                  placeholder="Enter parent email"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-height">Height (cm)</Label>
+                <Input
+                  id="edit-height"
+                  type="number"
+                  value={editHealthData.height}
+                  onChange={e =>
+                    setEditHealthData({ ...editHealthData, height: e.target.value })
+                  }
+                  placeholder="Enter height in cm"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-weight">Weight (kg)</Label>
+                <Input
+                  id="edit-weight"
+                  type="number"
+                  value={editHealthData.weight}
+                  onChange={e =>
+                    setEditHealthData({ ...editHealthData, weight: e.target.value })
+                  }
+                  placeholder="Enter weight in kg"
+                />
+              </div>
+              <div>
                 <Label htmlFor="edit-bloodType">Blood Type</Label>
                 <Select
-                  value={childHealth.bloodType}
-                  onValueChange={(value) =>
-                    setChildHealth({ ...childHealth, bloodType: value })
+                  value={editHealthData.blood_type}
+                  onValueChange={value =>
+                    setEditHealthData({ ...editHealthData, blood_type: value })
                   }
                 >
                   <SelectTrigger>
@@ -1171,33 +1583,8 @@ export function ChildProfiles({
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="edit-allergies">Allergies</Label>
-                <Input
-                  id="edit-allergies"
-                  value={childHealth.allergies}
-                  onChange={(e) =>
-                    setChildHealth({
-                      ...childHealth,
-                      allergies: e.target.value,
-                    })
-                  }
-                  placeholder="Separate with commas"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-notes">Notes</Label>
-                <Textarea
-                  id="edit-notes"
-                  value={childHealth.notes}
-                  onChange={(e) =>
-                    setChildHealth({ ...childHealth, notes: e.target.value })
-                  }
-                  placeholder="Additional notes"
-                />
-              </div>
               <div className="flex space-x-3">
-                <Button onClick={handleUpdateChild} className="flex-1">
+                <Button onClick={handleSaveAll} className="flex-1">
                   <Save className="w-4 h-4 mr-2" />
                   Update Details
                 </Button>
@@ -1282,6 +1669,44 @@ export function ChildProfiles({
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Test Results Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Test Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Test</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Result</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {availableTests.map(test => {
+                  const result = getTestResultForType(test.id);
+                  return (
+                    <TableRow key={test.id}>
+                      <TableCell>{test.name}</TableCell>
+                      <TableCell>
+                        {result ? "Completed" : "Pending"}
+                      </TableCell>
+                      <TableCell>
+                        {result ? result.result : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {result ? (result.updated_at ? result.updated_at.split("T")[0] : "-") : "-"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -1303,80 +1728,11 @@ export function ChildProfiles({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* {mockChildren.map((child) => (
+        {(students || []).map((child) => (
           <Card
             key={child.id}
             className="cursor-pointer hover:shadow-md transition-shadow"
-          >
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <Avatar>
-                    <AvatarFallback>{child.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-medium">{child.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Age: {child.age}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditChild(child);
-                    }}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteChild(child.id);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Last checkup:</span>
-                  <span>{child.lastCheckup}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Status:</span>
-                  <Badge
-                    variant={
-                      child.status === "healthy" ? "default" : "destructive"
-                    }
-                  >
-                    {child.status === "healthy" ? "Healthy" : "Needs Attention"}
-                  </Badge>
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => onViewChild(child.id)}
-              >
-                <Eye className="w-4 h-4 mr-2" />
-                View Profile
-              </Button>
-            </CardContent>
-          </Card>
-        ))} */}
-        {students.map((child) => (
-          <Card
-            key={child.id}
-            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleSelectChild(child.id)}
           >
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-4">
@@ -1566,7 +1922,7 @@ export function ChildProfiles({
               <Input
                 id="edit-birthDate"
                 type="date"
-                value={editChild.date}
+                value={editChild.date_of_birth}
                 onChange={(e) =>
                   setEditChild({ ...editChild, date_of_birth: e.target.value })
                 }
@@ -1624,8 +1980,55 @@ export function ChildProfiles({
                 placeholder="Enter parent email"
               />
             </div>
+            <div>
+              <Label htmlFor="edit-height">Height (cm)</Label>
+              <Input
+                id="edit-height"
+                type="number"
+                value={editHealthData.height}
+                onChange={e =>
+                  setEditHealthData({ ...editHealthData, height: e.target.value })
+                }
+                placeholder="Enter height in cm"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-weight">Weight (kg)</Label>
+              <Input
+                id="edit-weight"
+                type="number"
+                value={editHealthData.weight}
+                onChange={e =>
+                  setEditHealthData({ ...editHealthData, weight: e.target.value })
+                }
+                placeholder="Enter weight in kg"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-bloodType">Blood Type</Label>
+              <Select
+                value={editHealthData.blood_type}
+                onValueChange={value =>
+                  setEditHealthData({ ...editHealthData, blood_type: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select blood type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="A+">A+</SelectItem>
+                  <SelectItem value="A-">A-</SelectItem>
+                  <SelectItem value="B+">B+</SelectItem>
+                  <SelectItem value="B-">B-</SelectItem>
+                  <SelectItem value="O+">O+</SelectItem>
+                  <SelectItem value="O-">O-</SelectItem>
+                  <SelectItem value="AB+">AB+</SelectItem>
+                  <SelectItem value="AB-">AB-</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex space-x-3">
-              <Button onClick={handleChildHealthCare} className="flex-1">
+              <Button onClick={handleSaveAll} className="flex-1">
                 <Save className="w-4 h-4 mr-2" />
                 Update Details
               </Button>

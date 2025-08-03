@@ -53,7 +53,7 @@ class AllergySerializer(serializers.ModelSerializer):
 class HealthDataSerializer(serializers.ModelSerializer):
     allergies = AllergySerializer(many=True, read_only=True)
     allergy_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Allergy.objects.all(), many=True, write_only=True, source='allergies'
+        queryset=Allergy.objects.all(), many=True, write_only=True, source='allergies', required=False
     )
 
     class Meta:
