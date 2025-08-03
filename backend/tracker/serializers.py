@@ -76,7 +76,7 @@ class TestsSerializer(serializers.ModelSerializer):
 class TestResultsSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestResults
-        fields = ['id', 'test', 'result', 'student', 'created_at', 'updated_at']
+        fields = ['id', 'test', 'result', 'notes', 'student', 'created_at', 'updated_at']
 
 class StudentSerializer(serializers.ModelSerializer):
     healthdata = HealthDataSerializer(many=True, read_only=True, source='healthdata_set')
