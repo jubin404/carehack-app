@@ -266,7 +266,7 @@ export function ChildProfiles({
   const [activeReportFilter, setActiveReportFilter] = useState("all");
   const [newChild, setNewChild] = useState({
     name: "",
-    birthDate: "",
+    date_of_birth: "",
     gender: "",
     bloodType: "",
     allergies: "",
@@ -274,7 +274,7 @@ export function ChildProfiles({
   });
   const [editChild, setEditChild] = useState({
     name: "",
-    birthDate: "",
+    date_of_birth: "",
     gender: "",
     address: "",
     contact: "",
@@ -338,7 +338,7 @@ export function ChildProfiles({
       setIsAddingChild(false);
       setNewChild({
         name: "",
-        birthDate: "",
+        date_of_birth: "",
         gender: "",
         address: "",
         contact: "",
@@ -354,7 +354,7 @@ export function ChildProfiles({
     setEditingChildId(child.id);
     setEditChild({
       name: child.name,
-      birthDate: child.birthDate,
+      date_of_birth : child.date_of_birth,
       gender: child.gender.toLowerCase(),
       address: child.address || "",
       contact: child.contact || "",
@@ -389,7 +389,7 @@ export function ChildProfiles({
       setEditingChildId(null);
       setEditChild({
         name: "",
-        birthDate: "",
+        date_of_birth: "",
         gender: "",
         address: "",
         contact: "",
@@ -622,7 +622,7 @@ export function ChildProfiles({
                       <div>
                         <h3 className="font-medium">{selectedChild.name}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Born: {selectedChild.birthDate}
+                          Born: {selectedChild.date_of_birth}
                         </p>
                       </div>
                     </div>
@@ -1103,9 +1103,9 @@ export function ChildProfiles({
                 <Input
                   id="edit-birthDate"
                   type="date"
-                  value={editChild.birthDate}
+                  value={editChild.date_of_birth}
                   onChange={(e) =>
-                    setEditChild({ ...editChild, birthDate: e.target.value })
+                    setEditChild({ ...editChild, date_of_birth: e.target.value })
                   }
                 />
               </div>
@@ -1472,9 +1472,9 @@ export function ChildProfiles({
               <Input
                 id="birthDate"
                 type="date"
-                value={newChild.birthDate}
+                value={newChild.date_of_birth}
                 onChange={(e) =>
-                  setNewChild({ ...newChild, birthDate: e.target.value })
+                  setNewChild({ ...newChild, date_of_birth: e.target.value })
                 }
               />
             </div>
@@ -1566,9 +1566,9 @@ export function ChildProfiles({
               <Input
                 id="edit-birthDate"
                 type="date"
-                value={editChild.birthDate}
+                value={editChild.date}
                 onChange={(e) =>
-                  setEditChild({ ...editChild, birthDate: e.target.value })
+                  setEditChild({ ...editChild, date_of_birth: e.target.value })
                 }
               />
             </div>
