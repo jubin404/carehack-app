@@ -401,7 +401,7 @@ class HealthDataListCreateView(APIView):
     def get(self, request):
         student_id = request.GET.get('student')
         if student_id:
-            healthdata = HealthData.objects.filter(student_id=student_id)
+            healthdata = HealthData.objects.filter(student=student_id)
         else:
             healthdata = HealthData.objects.all()
         serializer = HealthDataSerializer(healthdata, many=True)
@@ -492,7 +492,7 @@ class MedicalHistoryListCreateView(APIView):
     def get(self, request):
         student_id = request.GET.get('student')
         if student_id:
-            histories = MedicalHistory.objects.filter(student_id=student_id)
+            histories = MedicalHistory.objects.filter(student=student_id)
         else:
             histories = MedicalHistory.objects.all()
         serializer = MedicalHistorySerializer(histories, many=True)
@@ -628,7 +628,7 @@ class TestResultsListCreateView(APIView):
     def get(self, request):
         student_id = request.GET.get('student')
         if student_id:
-            results = TestResults.objects.filter(student_id=student_id)
+            results = TestResults.objects.filter(student=student_id)
         else:
             results = TestResults.objects.all()
         serializer = TestResultsSerializer(results, many=True)
