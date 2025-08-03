@@ -80,5 +80,6 @@ class TestResults(models.Model):
     test = models.CharField(max_length=100)
     result = models.CharField(max_length=100)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    notes = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

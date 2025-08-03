@@ -84,6 +84,7 @@ export default function App() {
             selectedChildId={selectedChildId}
             onTakeTest={handleTakeTest}
             isAuthenticated={isAuthenticated}
+            setSelectedChildId={setSelectedChildId}
           />
         );
       case 'child-detail':

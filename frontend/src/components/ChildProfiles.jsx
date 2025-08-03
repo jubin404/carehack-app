@@ -276,6 +276,13 @@ export function ChildProfiles({
     name: "",
     birthDate: "",
     gender: "",
+    address: "",
+    contact: "",
+    parent_email: "",
+  });
+  const [childHealth, setChildHealth] = useState({
+    height: "",
+    weight: "",
     bloodType: "",
     allergies: "",
     notes: "",
@@ -358,8 +365,6 @@ export function ChildProfiles({
   };
 
   const handleUpdateChild = async () => {
-    console.log("Updating child:", editingChildId, editChild);
-
     try {
       const response = await fetch(
         `http://localhost:8000/api/students/${editingChildId}`,
@@ -389,6 +394,40 @@ export function ChildProfiles({
         address: "",
         contact: "",
         parent_email: "",
+      });
+    } catch (error) {
+      console.error("Error updating student:", error);
+    }
+  };
+  const handleChildHealthCare = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/students/${editingChildId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(childHealth),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update student");
+      }
+
+      const data = await response.json();
+      console.log("Student updated:", data);
+      handleUpdateChild;
+      // Reset state
+      setIsEditingChild(false);
+      setEditingChildId(null);
+      setChildHealth({
+        height: "",
+        weight: "",
+        bloodType: "",
+        allergies: "",
+        notes: "",
       });
     } catch (error) {
       console.error("Error updating student:", error);
@@ -1071,6 +1110,28 @@ export function ChildProfiles({
                 />
               </div>
               <div>
+                <Label htmlFor="edit-height">Height</Label>
+                <Input
+                  id="edit-height"
+                  type="number"
+                  value={childHealth.height}
+                  onChange={(e) =>
+                    setChildHealth({ ...childHealth, height: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-weight">Weight</Label>
+                <Input
+                  id="edit-weight"
+                  type="number"
+                  value={childHealth.weight}
+                  onChange={(e) =>
+                    setChildHealth({ ...childHealth, weight: e.target.value })
+                  }
+                />
+              </div>
+              <div>
                 <Label htmlFor="edit-gender">Gender</Label>
                 <Select
                   value={editChild.gender}
@@ -1090,9 +1151,9 @@ export function ChildProfiles({
               <div>
                 <Label htmlFor="edit-bloodType">Blood Type</Label>
                 <Select
-                  value={editChild.bloodType}
+                  value={childHealth.bloodType}
                   onValueChange={(value) =>
-                    setEditChild({ ...editChild, bloodType: value })
+                    setChildHealth({ ...childHealth, bloodType: value })
                   }
                 >
                   <SelectTrigger>
@@ -1114,9 +1175,12 @@ export function ChildProfiles({
                 <Label htmlFor="edit-allergies">Allergies</Label>
                 <Input
                   id="edit-allergies"
-                  value={editChild.allergies}
+                  value={childHealth.allergies}
                   onChange={(e) =>
-                    setEditChild({ ...editChild, allergies: e.target.value })
+                    setChildHealth({
+                      ...childHealth,
+                      allergies: e.target.value,
+                    })
                   }
                   placeholder="Separate with commas"
                 />
@@ -1125,9 +1189,9 @@ export function ChildProfiles({
                 <Label htmlFor="edit-notes">Notes</Label>
                 <Textarea
                   id="edit-notes"
-                  value={editChild.notes}
+                  value={childHealth.notes}
                   onChange={(e) =>
-                    setEditChild({ ...editChild, notes: e.target.value })
+                    setChildHealth({ ...childHealth, notes: e.target.value })
                   }
                   placeholder="Additional notes"
                 />
@@ -1365,7 +1429,9 @@ export function ChildProfiles({
                       child?.status === "healthy" ? "default" : "destructive"
                     }
                   >
-                    {child?.status === "healthy" ? "Healthy" : "Needs Attention"}
+                    {child?.status === "healthy"
+                      ? "Healthy"
+                      : "Needs Attention"}
                   </Badge>
                 </div>
               </div>
@@ -1559,7 +1625,7 @@ export function ChildProfiles({
               />
             </div>
             <div className="flex space-x-3">
-              <Button onClick={handleUpdateChild} className="flex-1">
+              <Button onClick={handleChildHealthCare} className="flex-1">
                 <Save className="w-4 h-4 mr-2" />
                 Update Details
               </Button>

@@ -48,41 +48,89 @@ const testQuestions: Record<string, TestQuestion[]> = {
       id: 1,
       type: 'color-blindness',
       question: 'What number do you see in this circle?',
-      options: ['12', '21', '17', "I can't see any number"],
-      correctAnswer: 0,
-      imageUrl: '/api/placeholder/300/300'
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer: 5,
+      imageUrl: '/cb10.png'
     },
     {
       id: 2,
       type: 'color-blindness',
       question: 'What number do you see in this circle?',
-      options: ['8', '3', '5', "I can't see any number"],
-      correctAnswer: 0,
-      imageUrl: '/api/placeholder/300/300'
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer: 7,
+      imageUrl: '/cb11.png'
     },
     {
       id: 3,
       type: 'color-blindness',
       question: 'What number do you see in this circle?',
-      options: ['29', '70', '26', "I can't see any number"],
-      correctAnswer: 0,
-      imageUrl: '/api/placeholder/300/300'
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer: 2,
+      imageUrl: '/cb12.png'
     },
     {
       id: 4,
       type: 'color-blindness',
       question: 'What number do you see in this circle?',
-      options: ['57', '75', '51', "I can't see any number"],
-      correctAnswer: 0,
-      imageUrl: '/api/placeholder/300/300'
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer: 6,
+      imageUrl: '/cb13.png'
     },
     {
       id: 5,
       type: 'color-blindness',
       question: 'What number do you see in this circle?',
-      options: ['6', '9', '5', "I can't see any number"],
-      correctAnswer: 0,
-      imageUrl: '/api/placeholder/300/300'
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer: 2,
+      imageUrl: '/cb14.png'
+    },
+    {
+      id: 6,
+      type: 'color-blindness',
+      question: 'What number do you see in this circle?',
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer: 7,
+      imageUrl: '/cb15.png'
+    },
+    {
+      id: 7,
+      type: 'color-blindness',
+      question: 'What number do you see in this circle?',
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer: 6,
+      imageUrl: '/cb16.png'
+    },
+    {
+      id: 8,
+      type: 'color-blindness',
+      question: 'What number do you see in this circle?',
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer: 7,
+      imageUrl: '/cb17.png'
+    },
+    {
+      id: 9,
+      type: 'color-blindness',
+      question: 'What number do you see in this circle?',
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer: 6,
+      imageUrl: '/cb18.png'
+    },
+    {
+      id: 10,
+      type: 'color-blindness',
+      question: 'What number do you see in this circle?',
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer:7,
+      imageUrl: '/cb19.png'
+    },
+    {
+      id: 11,
+      type: 'color-blindness',
+      question: 'What number do you see in this circle?',
+      options: ['1', '2', '3','4','5','6','7','8','9', "I can't see any number"],
+      correctAnswer: 2,
+      imageUrl: '/cb20.png'
     }
   ],
   'visual-acuity': [
@@ -209,12 +257,13 @@ export function TestTaking({ childId, testType, onBackToProfile }: TestTakingPro
     }
   };
 
-  const completeTest = (finalAnswers: number[]) => {
+  const completeTest = async(finalAnswers: number[]) => {
     let correctAnswers = 0;
     let score = 0;
 
     if (testType === 'color-blindness' || testType === 'visual-acuity') {
-      correctAnswers = finalAnswers.filter((answer, index) => 
+      console.log(finalAnswers, questions);
+      correctAnswers = finalAnswers.filter((answer, index) =>
         answer === questions[index].correctAnswer
       ).length;
       score = Math.round((correctAnswers / questions.length) * 100);
@@ -235,7 +284,26 @@ export function TestTaking({ childId, testType, onBackToProfile }: TestTakingPro
       result: generateResultText(testType!, score),
       recommendations: generateRecommendations(testType!, score)
     };
+     try {
+      const response = await fetch(
+        `http://localhost:8000/api/test-results/${childI}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(result),
+        }
+      );
 
+      if (!response.ok) {
+        throw new Error("Failed to update student");
+      }
+
+      const data = await response.json();
+    } catch (error) {
+      console.error("Error updating student:", error);
+    }
     setTestResult(result);
     setIsCompleted(true);
   };
@@ -514,8 +582,12 @@ export function TestTaking({ childId, testType, onBackToProfile }: TestTakingPro
             {currentQ.imageUrl && (
               <div className="flex justify-center">
                 <div className="w-64 h-64 bg-muted rounded-lg flex items-center justify-center">
-                  <span className="text-muted-foreground">Ishihara Color Test Plate</span>
-                </div>
+                  <img 
+                    src={currentQ.imageUrl} 
+                    alt="Test Plate" 
+                    className="max-w-full max-h-full object-contain bg-black"
+                  />
+                </div>  
               </div>
             )}
 
@@ -529,7 +601,7 @@ export function TestTaking({ childId, testType, onBackToProfile }: TestTakingPro
                   key={index}
                   variant="outline"
                   className="justify-start h-auto p-4 text-left"
-                  onClick={() => handleAnswer(index)}
+                  onClick={() => handleAnswer(index+1)}
                 >
                   <span className="w-6 h-6 rounded-full border-2 border-primary mr-3 flex-shrink-0 flex items-center justify-center text-sm">
                     {String.fromCharCode(65 + index)}
