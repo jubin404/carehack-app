@@ -24,7 +24,6 @@ class ClassGroup(models.Model):
         User,
         limit_choices_to={'role': 'teacher'},
         related_name='class_groups',
-        null=True,
         blank=True,
     )
 
@@ -32,6 +31,8 @@ class ClassGroup(models.Model):
 class Student(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
+    date_of_birth = models.DateField(null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=[('male','Male'), ('female','Female')], null=True, blank=True)
     address = models.TextField()
     parent_email = models.EmailField()
     contact = models.CharField(max_length=15)
@@ -51,7 +52,7 @@ class Allergy(models.Model):
     type = models.CharField(max_length=100, choices=ALLERGY_TYPE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
 class HealthData(models.Model):
     id = models.AutoField(primary_key=True)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
@@ -76,8 +77,9 @@ class  Tests(models.Model):
 
 class TestResults(models.Model):
     id = models.AutoField(primary_key=True)
-    test = models.ForeignKey(Tests, on_delete=models.CASCADE)
+    test = models.CharField(max_length=100)
     result = models.CharField(max_length=100)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    notes = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

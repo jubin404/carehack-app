@@ -31,11 +31,6 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
 
-class StudentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Student
-        fields = ['id', 'name', 'address', 'parent_email', 'contact', 'class_group']
-
 
 class ClassGroupSerializer(serializers.ModelSerializer):
     teachers = serializers.PrimaryKeyRelatedField(
@@ -81,4 +76,16 @@ class TestsSerializer(serializers.ModelSerializer):
 class TestResultsSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestResults
-        fields = ['id', 'test', 'result', 'student', 'created_at', 'updated_at']
+        fields = ['id', 'test', 'result', 'notes', 'student', 'created_at', 'updated_at']
+
+class StudentSerializer(serializers.ModelSerializer):
+    healthdata = HealthDataSerializer(many=True, read_only=True, source='healthdata_set')
+    medicalhistory = MedicalHistorySerializer(many=True, read_only=True, source='medicalhistory_set')
+    testresults = TestResultsSerializer(many=True, read_only=True, source='testresults_set')
+
+    class Meta:
+        model = Student
+        fields = [
+            'id', 'name', 'date_of_birth', 'gender', 'address', 'parent_email', 'contact', 'class_group',
+            'healthdata', 'medicalhistory', 'testresults'
+        ]
