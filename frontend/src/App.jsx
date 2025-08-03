@@ -106,7 +106,7 @@ export default function App() {
           />
         );
       case 'reports':
-        return <Reports />;
+        return <Reports isAuthenticated={isAuthenticated} />;
       case 'admin-reports':
         return user?.role !== 'parent' ? <AdminReports /> : <Dashboard onViewChild={handleViewChild} />;
       case 'resources':

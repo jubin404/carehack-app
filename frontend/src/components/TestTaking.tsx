@@ -284,15 +284,23 @@ export function TestTaking({ childId, testType, onBackToProfile }: TestTakingPro
       result: generateResultText(testType!, score),
       recommendations: generateRecommendations(testType!, score)
     };
+    
      try {
       const response = await fetch(
-        `http://localhost:8000/api/test-results/${childI}`,
+        `http://localhost:8000/api/testresults/`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(result),
+          body: JSON.stringify(
+            {
+              
+              test: testType,
+              result: score,
+              student: childId
+            }
+          ),
         }
       );
 

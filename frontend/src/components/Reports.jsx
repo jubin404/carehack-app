@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -139,14 +139,42 @@ const monthlyTrendsData = [
 ];
 
 const riskDistributionData = [
-  { name: 'Low Risk', value: 112, color: '#10b981' },
-  { name: 'Medium Risk', value: 32, color: '#f59e0b' },
+  { name: 'Low Risk', value: 70, color: '#10b981' },
+  { name: 'Medium Risk', value: 30, color: '#f59e0b' },
   { name: 'High Risk', value: 12, color: '#ef4444' }
 ];
 
-export function Reports() {
+export function Reports({isAuthenticated}) {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+   const [students, setStudents] = useState([]);
+     const fetchStudents = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/students/", {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch students");
+      }
+
+      const data = await response.json();
+      setStudents(data);
+      console.log("Students:", data);
+    } catch (err) {
+      console.error("Error fetching students:", err.message);
+    }
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchStudents();
+    }
+  }, [isAuthenticated]);
 
   const getRiskBadgeVariant = (risk) => {
     switch (risk) {
