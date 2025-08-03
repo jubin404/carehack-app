@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -23,7 +23,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
-const API_URL = 'http://localhost:8000/api/students/'; // Replace with your actual API endpoint
+const API_URL = 'https://your-api-endpoint.com/students'; // Replace with your actual API endpoint
 
 export function Reports() {
   const [students, setStudents] = useState([]);
@@ -196,43 +196,22 @@ export function Reports() {
     { month: 'Jul', assessments: 62, avgScore: 82 }
   ];
 
-const riskDistributionData = [
-  { name: 'Low Risk', value: 70, color: '#10b981' },
-  { name: 'Medium Risk', value: 30, color: '#f59e0b' },
-  { name: 'High Risk', value: 12, color: '#ef4444' }
-];
-
-export function Reports({isAuthenticated}) {
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-   const [students, setStudents] = useState([]);
-     const fetchStudents = async () => {
-    try {
-      const response = await fetch("http://localhost:8000/api/students/", {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch students");
-      }
-
-      const data = await response.json();
-      setStudents(data);
-      console.log("Students:", data);
-    } catch (err) {
-      console.error("Error fetching students:", err.message);
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchStudents();
-    }
-  }, [isAuthenticated]);
+  // Filter students based on search and filter criteria
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (student.class_group && `Grade ${student.class_group}`.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const healthScore = calculateHealthScore(student.healthdata);
+    const healthStatus = getHealthStatus(healthScore);
+    const riskLevel = getRiskLevel(student.healthdata);
+    
+    const matchesFilter = activeFilter === 'all' || 
+      (activeFilter === 'healthy' && healthStatus === 'healthy') ||
+      (activeFilter === 'needs-attention' && healthStatus === 'needs-attention') ||
+      (activeFilter === 'high-risk' && riskLevel === 'high');
+    
+    return matchesSearch && matchesFilter;
+  });
 
   const getRiskBadgeVariant = (risk) => {
     switch (risk) {
